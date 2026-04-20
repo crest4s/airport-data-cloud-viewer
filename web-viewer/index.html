@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Airport Data – Cloud Viewer</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f4f6f8; color: #1a1a2e; }
+
+    header {
+      background: #1a1a2e;
+      color: #fff;
+      padding: 1.2rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    header h1 { font-size: 1.3rem; font-weight: 600; }
+
+    .controls {
+      display: flex;
+      gap: 1rem;
+      padding: 1rem 2rem;
+      flex-wrap: wrap;
+      align-items: center;
+      background: #fff;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .controls input, .controls select {
+      padding: 0.4rem 0.8rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+    .controls label { font-size: 0.85rem; color: #555; }
+
+    .table-wrap { padding: 1.5rem 2rem; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+    thead th {
+      background: #1a1a2e;
+      color: #fff;
+      padding: 0.75rem 1rem;
+      text-align: left;
+      font-size: 0.82rem;
+      letter-spacing: .04em;
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+    thead th:hover { background: #2d2d50; }
+    thead th.asc::after  { content: ' ▲'; font-size: .7em; }
+    thead th.desc::after { content: ' ▼'; font-size: .7em; }
+    tbody tr { border-bottom: 1px solid #ebebeb; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f0f4ff; }
+    td { padding: 0.65rem 1rem; font-size: 0.88rem; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.55rem;
+      border-radius: 12px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      background: #dbeafe;
+      color: #1e40af;
+    }
+    #status { padding: 1rem 2rem; font-size: 0.9rem; color: #555; }
+    #status.error { color: #c0392b; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Airport Data – Cloud Viewer</h1>
+</header>
+
+<div class="controls">
+  <label>Buscar: <input id="search" type="text" placeholder="usuario, fase..." /></label>
+  <label>Fase:
+    <select id="filterPhase">
+      <option value="">Todas</option>
+      <option value="Phase01">Fase 01</option>
+      <option value="Phase02">Fase 02</option>
+      <option value="Phase03">Fase 03</option>
+      <option value="Phase04">Fase 04</option>
+    </select>
+  </label>
+  <button onclick="loadData()" style="padding:.4rem .9rem;border:none;background:#1a1a2e;color:#fff;border-radius:4px;cursor:pointer;font-size:.9rem;">
+    Actualizar
+  </button>
+</div>
+
+<div id="status">Cargando datos…</div>
+
+<div class="table-wrap">
+  <table id="resultsTable">
+    <thead>
+      <tr>
+        <th data-col="timestamp">Fecha/Hora</th>
+        <th data-col="username">Usuario</th>
+        <th data-col="phase">Fase</th>
+        <th data-col="parameters">Parámetros</th>
+        <th data-col="result">Resultado</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<script>
+  // ── CONFIG ──────────────────────────────────────────────────────────────
+  // Sustituye esta URL por el ApiUrl del output de SAM deploy
+  const API_URL = 'https://REPLACE_WITH_API_GATEWAY_URL/results';
+  // ────────────────────────────────────────────────────────────────────────
+
+  let allRows = [];
+  let sortCol = 'timestamp';
+  let sortDir = 'desc';
+
+  async function loadData() {
+    const status = document.getElementById('status');
+    status.className = '';
+    status.textContent = 'Cargando…';
+    try {
+      const res = await fetch(API_URL);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      allRows = await res.json();
+      status.textContent = `${allRows.length} registro(s) cargado(s).`;
+      render();
+    } catch (e) {
+      status.className = 'error';
+      status.textContent = `Error al cargar datos: ${e.message}`;
+    }
+  }
+
+  function render() {
+    const search = document.getElementById('search').value.toLowerCase();
+    const phase  = document.getElementById('filterPhase').value;
+
+    let rows = allRows.filter(r => {
+      const matchPhase  = !phase  || r.phase === phase;
+      const matchSearch = !search || JSON.stringify(r).toLowerCase().includes(search);
+      return matchPhase && matchSearch;
+    });
+
+    rows = rows.slice().sort((a, b) => {
+      const va = (a[sortCol] || '').toString();
+      const vb = (b[sortCol] || '').toString();
+      return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+    });
+
+    const tbody = document.getElementById('tbody');
+    tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td>${esc(r.timestamp)}</td>
+        <td>${esc(r.username)}</td>
+        <td><span class="badge">${esc(r.phase)}</span></td>
+        <td title="${esc(r.parameters)}">${esc(r.parameters)}</td>
+        <td title="${esc(r.result)}">${esc(r.result)}</td>
+      </tr>`).join('');
+
+    document.querySelectorAll('thead th').forEach(th => {
+      th.className = th.dataset.col === sortCol ? sortDir : '';
+    });
+  }
+
+  function esc(s) {
+    return String(s ?? '')
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;');
+  }
+
+  // Column sort
+  document.querySelectorAll('thead th[data-col]').forEach(th => {
+    th.addEventListener('click', () => {
+      if (sortCol === th.dataset.col) {
+        sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        sortCol = th.dataset.col;
+        sortDir = 'asc';
+      }
+      render();
+    });
+  });
+
+  // Live filters
+  document.getElementById('search').addEventListener('input', render);
+  document.getElementById('filterPhase').addEventListener('change', render);
+
+  loadData();
+</script>
+</body>
+</html>
