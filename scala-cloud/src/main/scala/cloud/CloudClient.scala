@@ -6,7 +6,7 @@ import java.net.{HttpURLConnection, URL}
 object CloudClient {
 
   private val API_URL: String =
-    sys.env.getOrElse("CLOUD_API_URL", "https://REPLACE_WITH_LAMBDA_FUNCTION_URL")
+    "https://<your-function-url>.lambda-url.<region>.on.aws/"
 
   def send(
     phase:       String,
