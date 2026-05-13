@@ -31,12 +31,13 @@ def _handle_post(event):
         table = dynamodb.Table(TABLE_NAME)
 
         item = {
-            'id':         str(uuid.uuid4()),
-            'phase':      str(body.get('phase', '')),
-            'parameters': str(body.get('parameters', '')),
-            'result':     str(body.get('result', '')),
-            'timestamp':  str(body.get('timestamp', datetime.now(timezone.utc).isoformat())),
-            'username':   str(body.get('username', '')),
+            'id':          str(uuid.uuid4()),
+            'phase':       str(body.get('phase', '')),
+            'parameters':  str(body.get('parameters', '')),
+            'result':      str(body.get('result', '')),
+            'full_details': json.dumps(body.get('full_details', []), default=str),
+            'timestamp':   str(body.get('timestamp', datetime.now(timezone.utc).isoformat())),
+            'username':    str(body.get('username', '')),
         }
 
         table.put_item(Item=item)

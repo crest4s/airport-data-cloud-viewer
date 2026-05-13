@@ -12,7 +12,7 @@ import scala.annotation.tailrec
  */
 object Phase04 {
 
-  def run(flights: List[Flight], airportType: String, threshold: Int): Unit = {
+  def run(flights: List[Flight], airportType: String, threshold: Int): List[(String, Int)] = {
     val selector: Flight => String = airportType match {
       case "origin" => _.originAirport
       case "dest"   => _.destAirport
@@ -34,6 +34,7 @@ object Phase04 {
     }
 
     printHistogram(sorted, maxCount)
+    sorted
   }
 
   @tailrec
