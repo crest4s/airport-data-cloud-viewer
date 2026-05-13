@@ -192,12 +192,12 @@
     displayRows = rows;
     const tbody = document.getElementById('tbody');
     tbody.innerHTML = rows.map((r, i) => `
-      <tr>
+      <tr data-idx="${i}">
         <td>${esc(r.timestamp)}</td>
         <td>${esc(r.username)}</td>
         <td><span class="badge">${esc(r.phase)}</span></td>
         <td title="${esc(r.parameters)}">${esc(r.parameters)}</td>
-        <td class="result-cell" title="Clic para ver detalles" onclick="openModal(${i})"><span>${esc(r.result)}</span></td>
+        <td class="result-cell" title="Clic para ver detalles"><span>${esc(r.result)}</span></td>
       </tr>`).join('');
 
     document.querySelectorAll('thead th').forEach(th => {
@@ -228,7 +228,15 @@
   document.getElementById('search').addEventListener('input', render);
   document.getElementById('filterPhase').addEventListener('change', render);
 
-  // ── Modal ─────────────────────────────────────────────────────────────────
+  // ── Modal – event delegation (avoids inline onclick blocked by CSP) ───────
+  document.getElementById('tbody').addEventListener('click', e => {
+    const td = e.target.closest('td.result-cell');
+    if (!td) return;
+    const tr = td.closest('tr[data-idx]');
+    if (!tr) return;
+    openModal(parseInt(tr.dataset.idx, 10));
+  });
+
   function openModal(idx) {
     const r = displayRows[idx];
     document.getElementById('modal-title').textContent =

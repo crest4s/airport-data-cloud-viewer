@@ -164,13 +164,23 @@ object Main extends App {
         conn.setRequestMethod("POST")
         conn.setDoOutput(true)
         conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8")
+        conn.setConnectTimeout(10000)
+        conn.setReadTimeout(15000)
         val out = new DataOutputStream(conn.getOutputStream)
         out.write(body.getBytes("UTF-8"))
         out.flush()
         out.close()
-        println(s"Enviado correctamente. HTTP ${conn.getResponseCode}")
+        val code = conn.getResponseCode
+        if (code >= 200 && code < 300) {
+          println(s"Enviado correctamente. HTTP $code")
+        } else {
+          val stream = Option(conn.getErrorStream).getOrElse(conn.getInputStream)
+          val errorBody = scala.io.Source.fromInputStream(stream, "UTF-8").mkString.take(300)
+          stream.close()
+          println(s"Error del servidor. HTTP $code: $errorBody")
+        }
       } catch {
-        case e: Exception => println(s"Error al enviar a la nube: ${e.getMessage}")
+        case e: Exception => println(s"Error al enviar a la nube: ${e.getClass.getSimpleName}: ${e.getMessage}")
       }
     }
 
