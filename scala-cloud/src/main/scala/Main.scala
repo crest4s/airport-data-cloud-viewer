@@ -45,35 +45,36 @@ object Main extends App {
         print("Umbral de retraso en despegue (minutos): ")
         val threshold = readInt(0)
         val result    = Phase01.run(flights, threshold)
-        val summary   = s"Encontrados ${ListUtils.myLength(result)} vuelos con DEP_DELAY umbral $threshold min"
-        promptCloud("Phase01", s"threshold=$threshold", summary)
+        val op        = if (threshold >= 0) ">=" else "<="
+        val summary   = s"${ListUtils.myLength(result)} vuelos con DEP_DELAY $op $threshold min"
+        promptCloud("Phase01", s"threshold=$threshold", summary, phase01Json(myTake(result, 20, Nil), Nil))
         menuLoop(flights)
 
       case "2" =>
         print("Umbral de retraso en aterrizaje (minutos): ")
         val threshold       = readInt(0)
         val (result, count) = Phase02.run(flights, threshold)
-        val summary         = s"Encontrados $count vuelos con ARR_DELAY umbral $threshold min"
-        promptCloud("Phase02", s"threshold=$threshold", summary)
+        val op              = if (threshold >= 0) ">=" else "<="
+        val summary         = s"$count vuelos con ARR_DELAY $op $threshold min"
+        promptCloud("Phase02", s"threshold=$threshold", summary, phase02Json(myTake(result, 20, Nil), Nil))
         menuLoop(flights)
 
       case "3" =>
         val column    = readColumn()
         val operation = readOperation()
         val result    = Phase03.run(flights, column, operation)
-        val summary   = result match {
-          case Some((id, v)) => s"$operation($column)=$v en vuelo id=$id"
-          case None          => "Sin datos válidos"
-        }
-        promptCloud("Phase03", s"column=$column operation=$operation", summary)
+        val summary   = result.map(r => s"$operation $column = ${r._2} min (vuelo id=${r._1})").getOrElse("Sin datos válidos")
+        val details   = result.map(r => s"""{"id":${r._1},"column":"${ej(column)}","operation":"${ej(operation)}","value":${r._2}}""").getOrElse("null")
+        promptCloud("Phase03", s"column=$column,operation=$operation", summary, details)
         menuLoop(flights)
 
       case "4" =>
         val airportType = readAirportType()
         print("Umbral mínimo de ocurrencias: ")
         val threshold = readInt(0)
-        Phase04.run(flights, airportType, threshold)
-        promptCloud("Phase04", s"airportType=$airportType threshold=$threshold", s"Histograma generado (umbral $threshold)")
+        val result    = Phase04.run(flights, airportType, threshold)
+        val summary   = s"${ListUtils.myLength(result)} aeropuertos con count >= $threshold ($airportType)"
+        promptCloud("Phase04", s"airportType=$airportType,threshold=$threshold", summary, phase04Json(myTake(result, 20, Nil), Nil))
         menuLoop(flights)
 
       case "5" =>
@@ -86,14 +87,14 @@ object Main extends App {
   }
 
   // ── Cloud upload ─────────────────────────────────────────────────────────
-  private def promptCloud(phase: String, params: String, result: String): Unit = {
+  private def promptCloud(phase: String, params: String, result: String, fullDetails: String): Unit = {
     print("\n¿Enviar resultados al Cloud? (s/n): ")
     val answer = scala.io.StdIn.readLine().trim.toLowerCase
     if (answer == "s" || answer == "si" || answer == "sí" || answer == "y") {
       print("Nombre de usuario (alfanumérico): ")
       val username  = scala.io.StdIn.readLine().trim
       val timestamp = Instant.now().toString
-      val ok        = CloudClient.send(phase, params, result, timestamp, username)
+      val ok        = CloudClient.send(phase, params, result, fullDetails, timestamp, username)
       if (ok) println("[Cloud] Datos enviados correctamente.")
       else    println("[Cloud] Error al enviar los datos.")
     }
@@ -139,4 +140,45 @@ object Main extends App {
       case _   => "origin"
     }
   }
+
+  // ── JSON serialisers (tail-recursive, no prohibited ops) ─────────────────
+  private def ej(s: String): String =
+    s.replace("\\", "\\\\").replace("\"", "\\\"")
+     .replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")
+
+  @tailrec
+  private def myTake[A](list: List[A], n: Int, acc: List[A]): List[A] =
+    if (n <= 0) ListUtils.myReverse(acc)
+    else list match {
+      case Nil    => ListUtils.myReverse(acc)
+      case h :: t => myTake(t, n - 1, h :: acc)
+    }
+
+  @tailrec
+  private def joinParts(parts: List[String], acc: String, first: Boolean): String =
+    parts match {
+      case Nil    => acc
+      case h :: t => joinParts(t, if (first) h else s"$acc,$h", false)
+    }
+
+  @tailrec
+  private def phase01Json(flights: List[Flight], acc: List[String]): String =
+    flights match {
+      case Nil    => "[" + joinParts(ListUtils.myReverse(acc), "", true) + "]"
+      case h :: t => phase01Json(t, s"""{"id":${h.id},"dep_delay":${h.depDelay.toInt}}""" :: acc)
+    }
+
+  @tailrec
+  private def phase02Json(flights: List[Flight], acc: List[String]): String =
+    flights match {
+      case Nil    => "[" + joinParts(ListUtils.myReverse(acc), "", true) + "]"
+      case h :: t => phase02Json(t, s"""{"id":${h.id},"tail_num":"${ej(h.tailNum)}","arr_delay":${h.arrDelay.toInt}}""" :: acc)
+    }
+
+  @tailrec
+  private def phase04Json(counts: List[(String, Int)], acc: List[String]): String =
+    counts match {
+      case Nil          => "[" + joinParts(ListUtils.myReverse(acc), "", true) + "]"
+      case (ap, n) :: t => phase04Json(t, s"""{"airport":"${ej(ap)}","count":$n}""" :: acc)
+    }
 }

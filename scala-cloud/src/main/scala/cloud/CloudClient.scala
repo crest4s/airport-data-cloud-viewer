@@ -1,41 +1,25 @@
 package cloud
 
-import java.io.{DataOutputStream, InputStreamReader, BufferedReader}
+import java.io.DataOutputStream
 import java.net.{HttpURLConnection, URL}
 
-/**
- * Minimal HTTP client that POSTs phase results to the AWS API Gateway endpoint.
- * Uses only java.net – no external libraries.
- *
- * Set CLOUD_API_URL to the ApiUrl output from `sam deploy`.
- * Example: https://<api-id>.execute-api.<region>.amazonaws.com/Prod/results
- */
 object CloudClient {
 
   private val API_URL: String =
-    sys.env.getOrElse("CLOUD_API_URL", "https://REPLACE_WITH_API_GATEWAY_URL/results")
+    sys.env.getOrElse("CLOUD_API_URL", "https://REPLACE_WITH_LAMBDA_FUNCTION_URL")
 
-  /**
-   * Sends a result payload to the cloud.
-   *
-   * @param phase      e.g. "Phase01"
-   * @param parameters human-readable description of the input parameters
-   * @param result     serialised result (use ResultSerializer)
-   * @param timestamp  ISO-8601 timestamp
-   * @param username   alphanumeric username entered by the user
-   * @return true if the server returned 2xx, false otherwise
-   */
   def send(
-    phase:      String,
-    parameters: String,
-    result:     String,
-    timestamp:  String,
-    username:   String
+    phase:       String,
+    parameters:  String,
+    result:      String,
+    fullDetails: String,
+    timestamp:   String,
+    username:    String
   ): Boolean = {
     val payload =
       s"""{"phase":"${escape(phase)}","parameters":"${escape(parameters)}",""" +
-      s""""result":"${escape(result)}","timestamp":"${escape(timestamp)}",""" +
-      s""""username":"${escape(username)}"}"""
+      s""""result":"${escape(result)}","full_details":$fullDetails,""" +
+      s""""timestamp":"${escape(timestamp)}","username":"${escape(username)}"}"""
 
     try {
       val url  = new URL(API_URL)
@@ -47,7 +31,7 @@ object CloudClient {
       conn.setReadTimeout(8000)
 
       val out = new DataOutputStream(conn.getOutputStream)
-      out.writeBytes(payload)
+      out.write(payload.getBytes("UTF-8"))
       out.flush()
       out.close()
 
@@ -61,7 +45,6 @@ object CloudClient {
     }
   }
 
-  /** Escapes a string for safe inclusion in a JSON string value. */
   private def escape(s: String): String =
     s.replace("\\", "\\\\")
      .replace("\"", "\\\"")
