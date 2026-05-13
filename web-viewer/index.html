@@ -120,6 +120,27 @@
       padding: .5rem .9rem; border-bottom: 1px solid #eee;
       white-space: normal; max-width: none; overflow: visible;
     }
+    #modal-summary {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: .75rem 1rem;
+      margin-bottom: 1rem;
+      font-size: .85rem;
+    }
+    #modal-summary .summary-row {
+      display: flex;
+      gap: .5rem;
+      margin-bottom: .35rem;
+    }
+    #modal-summary .summary-row:last-child { margin-bottom: 0; }
+    #modal-summary .summary-label {
+      font-weight: 600;
+      color: #374151;
+      min-width: 100px;
+      white-space: nowrap;
+    }
+    #modal-summary .summary-value { color: #1a1a2e; word-break: break-word; }
   </style>
 </head>
 <body>
@@ -150,6 +171,7 @@
   <div id="modal-box">
     <button id="modal-close" onclick="closeModal()">&#x2715;</button>
     <h2 id="modal-title"></h2>
+    <div id="modal-summary"></div>
     <p id="modal-count"></p>
     <div id="modal-content"></div>
   </div>
@@ -265,6 +287,12 @@
     const r = displayRows[idx];
     document.getElementById('modal-title').textContent =
       `${r.phase}  ·  ${r.username}  ·  ${r.timestamp}`;
+
+    const summaryEl = document.getElementById('modal-summary');
+    summaryEl.innerHTML = `
+      <div class="summary-row"><span class="summary-label">Parámetros:</span><span class="summary-value">${esc(r.parameters)}</span></div>
+      <div class="summary-row"><span class="summary-label">Resultado:</span><span class="summary-value">${esc(r.result)}</span></div>
+    `;
 
     let details;
     try { details = JSON.parse(r.full_details || 'null'); } catch(e) { details = null; }
