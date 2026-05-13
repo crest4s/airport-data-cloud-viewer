@@ -1,7 +1,10 @@
 name: Deploy web-viewer to GitHub Pages
 
 on:
-  workflow_dispatch:       # solo se despliega manualmente desde la pestaña Actions
+  push:
+    branches: [main]
+    paths: ['web-viewer/**']
+  workflow_dispatch:
 
 permissions:
   contents: read
