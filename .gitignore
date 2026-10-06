@@ -15,3 +15,7 @@ __pycache__/
 *.iml
 .vscode/
 .DS_Store
+
+# AI assistant files
+CLAUDE.md
+.claude/

@@ -4,14 +4,12 @@ Functional Scala analysis of the US Airline dataset (about 1.2 million flights, 
 
 Lab project (PL2) for the *Paradigmas Avanzados de Programación* (Advanced Programming Paradigms) course at the University of Alcalá (UAH), 2025–26 academic year. The four analysis phases are the same ones implemented with CUDA in [cuda-flight-delay-analysis](https://github.com/crest4s/cuda-flight-delay-analysis), rewritten here in a purely functional style.
 
-**Live viewer:** <https://crest4s.github.io/airport-data-cloud-viewer/>
-
 ## How it works
 
 ```
 Scala console app ──POST──▶ AWS Lambda (Function URL) ──▶ DynamoDB
                                      ▲
-web-viewer (GitHub Pages) ──GET / DELETE──┘
+web-viewer (static page) ──GET / DELETE──┘
 ```
 
 ### Scala application
@@ -35,12 +33,11 @@ After each phase the program can upload a summary and the first 20 results to th
 ### Cloud API (`cloud-api/`)
 
 - `lambda/handler.py` — Python 3.12 Lambda that handles `POST` (store a result), `GET` (list results, optionally filtered by phase) and `DELETE` (by id), backed by a DynamoDB table (`airport-results`). Unit tests with pytest in `lambda/test_handler.py`.
-- `template.yaml` — AWS SAM template: Lambda with a public Function URL (CORS enabled) and an on-demand DynamoDB table.
-- `DEPLOYMENT.md` — step-by-step manual deployment from the AWS console (Spanish).
+- `DEPLOYMENT.md` — step-by-step deployment from the AWS console (Spanish): Lambda with a public Function URL (CORS enabled) and an on-demand DynamoDB table.
 
 ### Web viewer (`web-viewer/index.html`)
 
-Single static page that lists the uploaded results with search, filters by phase, pagination, detail view, CSV export, auto-refresh, record deletion and light/dark theme. It is deployed to GitHub Pages by `.github/workflows/deploy-pages.yml` on every push to `main` that touches `web-viewer/`.
+Single static page that lists the uploaded results with search, filters by phase, pagination, detail view, CSV export, auto-refresh, record deletion and light/dark theme. It can be served from any static host.
 
 ## Running it
 
@@ -60,13 +57,7 @@ scala -cp out Main
 
 ### API
 
-```bash
-cd cloud-api
-sam build
-sam deploy --guided
-```
-
-The stack outputs the Function URL; set it as `API_URL` in `scala-cloud/src/main/scala/cloud/CloudClient.scala` and `web-viewer/index.html`.
+Deploy the Lambda and the DynamoDB table following [`cloud-api/DEPLOYMENT.md`](cloud-api/DEPLOYMENT.md), then set your Function URL as `API_URL` in `scala-cloud/src/main/scala/cloud/CloudClient.scala` and `web-viewer/index.html` (both contain a placeholder).
 
 Lambda tests:
 
