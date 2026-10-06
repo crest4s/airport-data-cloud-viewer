@@ -1,0 +1,17 @@
+# Dataset (download separately, see README)
+*.csv
+data/
+
+# Build output
+out/
+target/
+.bsp/
+.aws-sam/
+__pycache__/
+.pytest_cache/
+
+# IDE / OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
