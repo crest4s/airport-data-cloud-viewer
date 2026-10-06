@@ -35,6 +35,9 @@ After each phase the program can upload a summary and the first 20 results to th
 - `lambda/handler.py` — Python 3.12 Lambda that handles `POST` (store a result), `GET` (list results, optionally filtered by phase) and `DELETE` (by id), backed by a DynamoDB table (`airport-results`). Unit tests with pytest in `lambda/test_handler.py`.
 - `DEPLOYMENT.md` — step-by-step deployment from the AWS console (Spanish): Lambda with a public Function URL (CORS enabled) and an on-demand DynamoDB table.
 
+> [!WARNING]
+> **Lab scope, not production-ready.** The Lambda Function URL is public and unauthenticated (`AuthType: NONE`), and it accepts `DELETE` requests, so anyone who knows the URL can read, add or delete results. That was acceptable for a short-lived course demo, but a real deployment should require authentication (for example IAM auth on the Function URL, or API Gateway with API keys or Cognito), restrict CORS to the viewer's origin and drop or protect the `DELETE` route.
+
 ### Web viewer (`web-viewer/index.html`)
 
 Single static page that lists the uploaded results with search, filters by phase, pagination, detail view, CSV export, auto-refresh, record deletion and light/dark theme. It can be served from any static host.
