@@ -36,7 +36,7 @@ After each phase the program can upload a summary and the first 20 results to th
 - `DEPLOYMENT.md` — step-by-step deployment from the AWS console (Spanish): Lambda with a public Function URL (CORS enabled) and an on-demand DynamoDB table.
 
 > [!WARNING]
-> **Lab scope, not production-ready.** The Lambda Function URL is public and unauthenticated (`AuthType: NONE`), and it accepts `DELETE` requests, so anyone who knows the URL can read, add or delete results. That was acceptable for a short-lived course demo, but a real deployment should require authentication (for example IAM auth on the Function URL, or API Gateway with API keys or Cognito), restrict CORS to the viewer's origin and drop or protect the `DELETE` route.
+> **Lab scope, not production-ready.** The Lambda Function URL is public and unauthenticated (`AuthType: NONE`), and it accepts `DELETE` requests, so anyone who knows the URL can read, add or delete results. That was acceptable for a short-lived course demo, but a real deployment should require authentication (for example IAM auth on the Function URL, or API Gateway with API keys or Cognito), restrict CORS to the viewer's origin and drop or protect the `DELETE` route. The original AWS deployment (Lambda and DynamoDB table) has been removed.
 
 ### Web viewer (`web-viewer/index.html`)
 
